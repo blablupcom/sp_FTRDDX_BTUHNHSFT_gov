@@ -84,7 +84,7 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "FTRDDX_BTUHNHSFT_gov"
-url = "https://data.gov.uk/dataset/invoices-paid-2011-12"
+url = "http://www.basildonandthurrock.nhs.uk/trust-documents-and-declarations/trust-expenditure"
 errors = 0
 data = []
 
@@ -96,19 +96,30 @@ soup = BeautifulSoup(html, 'lxml')
 
 #### SCRAPE DATA
 
-blocks = soup.find_all('div', 'dropdown')
+blocks = soup.find_all('div', 'pd-subcategory')
 for block in blocks:
     file_url = ''
     try:
-        file_url = block.find('ul', 'dropdown-menu').find_all('li')[1].find('a')['href']
+        file_url = block.find('a')['href']
     except:
         pass
     url = file_url
-    title = block.find_previous('div', 'dataset-resource-text').text.strip()
-    csvMth = title.split()[-2].strip()[:3]
-    csvYr = title.split()[-1].strip()[-4:]
-    if 'MB' in csvYr:
-        continue
+    sub_html = urllib2.urlopen('http://www.basildonandthurrock.nhs.uk'+url)
+    sub_soup = BeautifulSoup(sub_html, 'lxml')
+    files = sub_soup.find_all('div', 'pd-filebox')
+    for file_link in files:
+        url = 'http://www.basildonandthurrock.nhs.uk'+file_link.find('a', attrs={'class': ""})['href']
+        title = file_link.text.strip()
+        csvMth = title.split('-')[-1].strip()[:3]
+        csvYr = title.split('-')[-1].strip().replace('Download', '').strip()[-4:]
+        csvMth = convert_mth_strings(csvMth.upper())
+        data.append([csvYr, csvMth, url])
+files = soup.find_all('div', 'pd-filebox')
+for file_link in files:
+    url = 'http://www.basildonandthurrock.nhs.uk'+file_link.find('a', attrs={'class': ""})['href']
+    title = file_link.text.strip()
+    csvMth = title.split('-')[-1].strip()[:3]
+    csvYr = title.split('-')[-1].strip().replace('Download', '').strip()[-4:]
     csvMth = convert_mth_strings(csvMth.upper())
     data.append([csvYr, csvMth, url])
 
